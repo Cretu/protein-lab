@@ -1,6 +1,6 @@
 {
   "name": "protein-lab",
-  "version": "0.1.0+codex.20260606011000",
+  "version": "0.1.0+codex.20260607075551",
   "description": "AF Server workflows and experiment guardrails for Protein Lab.",
   "author": {
     "name": "Local developer"
