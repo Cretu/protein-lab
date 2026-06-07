@@ -1,11 +1,11 @@
 ---
 name: protein-lab-experiment-design
-description: "Use for designing Protein Lab AlphaFold Server experiments: selecting chains, fragments, controls, mutants, repeats, linkers, seeds, manifests, FASTA/JSON submissions, status logs, and conclusion boundaries for GRK4, ZDHHC17, EVTCGL, short peptides, truncations, and full-length baselines."
+description: "Use for designing Protein Lab dry-lab experiments and tool input packages: selecting chains, fragments, controls, mutants, repeats, linkers, seeds, manifests, FASTA/JSON submissions, interpretation rubrics, and conclusion boundaries for AlphaFold Server and future computational biology tools."
 ---
 
 # Protein Lab Experiment Design
 
-Use this skill before submitting or rerunning AF Server jobs for Protein Lab.
+Use this skill before submitting or rerunning dry-lab jobs for Protein Lab. AlphaFold Server is the first supported tool family, but design decisions should stay tool-aware rather than AF-only.
 
 ## Required Output
 
@@ -13,8 +13,8 @@ For a new experiment, create or update:
 
 1. plan markdown with background, hypothesis, exact inputs, jobs, controls, interpretation rubric, and conclusion boundary
 2. FASTA when useful for human review
-3. AF Server JSON request
-4. manifest CSV with job id, chain A, chain B, purpose, and expected comparison
+3. tool-specific input such as an AF Server JSON request
+4. manifest CSV with job id, chain or sample mapping, purpose, and expected comparison
 5. `status_log.md` with timestamps and submission/download state
 
 ## Design Rules
@@ -33,6 +33,12 @@ For a new experiment, create or update:
 - Internal refinement: split a parent positive fragment into overlapping windows to test whether the parent signal survives.
 - Short peptide round: compare lead, one-position mutations, scrambled negative, and known positive controls.
 - Linker/repeat panel: compare monomer, direct repeat, linker repeat, and directional extension; do not assume length is beneficial.
+
+## Handoff
+
+- Use `protein-lab-round-management` to create the local directory and status log before or during design.
+- Use `protein-lab-tool-execution` after inputs are reviewed and ready to submit.
+- Use `protein-lab-feishu-workflow` when the design came from a Feishu task or needs a Feishu experiment document.
 
 ## Built-in Protein Lab Lessons
 

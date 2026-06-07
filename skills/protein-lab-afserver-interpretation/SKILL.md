@@ -18,7 +18,13 @@ Use this skill when results have returned from AF Server.
 Run the bundled audit script when raw files are present:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/scripts/afserver_audit.py <zip-or-dir> --out-dir <output-dir>
+python3 /Users/luke/plugins/protein-lab/skills/protein-lab-afserver-interpretation/scripts/afserver_audit.py <zip-or-dir> --out-dir <output-dir>
+```
+
+For legacy multi-job zip summaries, use the co-located helper:
+
+```bash
+python3 /Users/luke/plugins/protein-lab/skills/protein-lab-afserver-interpretation/scripts/summarize_afserver_multijob_zip.py <zip-path> --out-dir <output-dir>
 ```
 
 ## Interpretation Order
@@ -51,3 +57,8 @@ Always write both:
 - what it does not prove
 
 Never write AF evidence as if it were wet-lab validation.
+
+## Handoff
+
+- Send ranked or next-round candidate decisions to `protein-lab-candidate-refinement`.
+- Send Chinese final summaries, Feishu-ready updates, or postmortems to `protein-lab-reporting-postmortem`.

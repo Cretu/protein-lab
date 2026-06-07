@@ -22,6 +22,8 @@ Use this order unless the user asks otherwise:
 
 For Feishu-ready text, keep the conclusion compact, include only the essential table, and list attachments by filename if available.
 
+Use `protein-lab-feishu-workflow` for the actual Feishu document updates, task comments, and completion calls. This skill owns the wording and postmortem content, not the Feishu API operation.
+
 ## Language Rules
 
 - Use Chinese for user-facing reports by default.
