@@ -1,70 +1,52 @@
 ---
 name: protein-lab-afserver-workflows
-description: Use for Protein Lab AlphaFold Server experiment planning, raw result interpretation, multi-job zip review, peptide or fragment comparison, candidate refinement, and postmortems in /Users/luke/Documents/Protein Lab. Especially relevant for GRK4, ZDHHC17, EVTCGL, short peptide, truncation, mutation, and side-by-side AF Server tasks.
+description: "Router skill for Protein Lab AlphaFold Server work in /Users/luke/Documents/Protein Lab. Use when the user asks broadly about Protein Lab experiments, AF Server workflows, GRK4, ZDHHC17, EVTCGL, peptide or fragment screens, candidate refinement, reporting, or turning lessons into plugin guardrails."
 ---
 
 # Protein Lab AF Server Workflows
 
-Use this skill when working in `/Users/luke/Documents/Protein Lab` on AlphaFold Server dry-lab experiments.
+Use this as the router for Protein Lab dry-lab work. Prefer the narrower skills when the request is specific:
 
-## Default Workflow
+- `protein-lab-experiment-design`: design AF Server jobs, controls, manifests, and submission packages.
+- `protein-lab-afserver-interpretation`: interpret raw AF Server zips or extracted job folders.
+- `protein-lab-candidate-refinement`: rank, truncate, mutate, or stop peptide/fragment lead optimization.
+- `protein-lab-reporting-postmortem`: write Chinese reports, Feishu-ready updates, and durable postmortems.
+- `research-experiment-automation`: run the end-to-end Feishu task, experiment document, local round, online tool, result update, and task-comment loop.
 
-1. Start from the source of truth:
-   - experiment plan or manifest when designing jobs
-   - AF Server JSON request when checking what was submitted
-   - raw `summary_confidences_*.json` and `full_data_*.json` when interpreting results
-   - downloaded zip structure when handling multi-job results
-2. Classify the task before judging:
-   - single job interpretation
-   - multi-job batch summary
-   - side-by-side peptide, fragment, truncation, or mutation comparison
-   - candidate refinement or lead selection
-   - postmortem and skill hardening
-3. Prefer conservative conclusions:
-   - say what the AF result supports
-   - say what it does not prove
-   - separate structural hypotheses from wet-lab evidence
-4. If the run had blockers, convert them into durable guardrails before finishing.
+## Project Defaults
 
-## Evidence Order
+- Work in `/Users/luke/Documents/Protein Lab` unless the user points elsewhere.
+- Default language to Chinese in user-facing reports.
+- Treat the plugin as local project memory, not a public biological knowledge base.
+- Use raw AF Server JSON and job structure as source of truth; automatic reports are secondary.
+- When blocked, leave a reusable guardrail, not just a one-off explanation.
 
-For peptide or fragment binding comparisons, rank evidence in this order:
+## Shared Evidence Order
 
-1. `ipTM` / chain-pair iPTM
+For peptide, fragment, truncation, mutation, or linker comparisons:
+
+1. `ipTM` or chain-pair iPTM
 2. peptide or fragment mean pLDDT
-3. mean and minimum inter-chain PAE
+3. mean/min inter-chain PAE
 4. token-level contact probability
-5. whether multiple models converge on the same receptor patch
-6. whether controls, truncations, or mutations move in the expected direction
+5. cross-model convergence to the same receptor patch
+6. directionality against controls, truncations, or mutations
 
-Do not use atom-distance proximity alone as high-confidence interface evidence. Flexible peptides can lie near a surface without a reliable interface.
+## Shared Anti-patterns
 
-## Multi-job Guardrails
+- Do not assume longer peptides bind better.
+- Do not assume direct repeats improve binding.
+- Do not treat atom-distance proximity alone as interface evidence.
+- Do not call a full-length membrane-protein AF failure a clean biological negative.
+- Do not use one best model as enough when the other models diverge.
+- Do not turn low-confidence flexible-tail contacts into design anchors.
 
-- Never use a mixed automatic report as the primary source for side-by-side conclusions.
-- Split multi-job zips by job directory or job name before comparing.
-- For each job, read its own `summary_confidences_*.json` and `full_data_*.json`.
-- Treat repeated filenames such as `model_0` as job-local, not globally comparable.
-- When a job is pending or delayed while peers finish, record it as a queue/state issue unless raw evidence shows the sequence is unsupported.
+## Useful Script
 
-## Protein Lab Anti-patterns
+For raw AF Server result auditing, run:
 
-Avoid these shortcuts:
+```bash
+python3 /Users/luke/plugins/protein-lab/scripts/afserver_audit.py <zip-or-dir> --out-dir <output-dir>
+```
 
-- assuming longer peptides bind better
-- assuming direct repeats improve binding
-- assuming a Cys-adjacent window is mechanistically meaningful without controls
-- treating full-length membrane-protein AF noise as a clean negative biological result
-- treating a single best model as enough when the other models diverge
-- using low-confidence contacts from flexible tails as design anchors
-
-## Reporting Shape
-
-For Chinese reports, prefer:
-
-1. one-sentence conclusion
-2. same-metric comparison table
-3. key evidence and patch recurrence
-4. conclusion boundary
-5. next wet-lab or next AF experiment recommendation
-6. postmortem guardrails if the task encountered friction
+Use the script for extraction, metrics, and sanity checks. Use the skills for scientific judgment.

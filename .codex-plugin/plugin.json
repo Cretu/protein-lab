@@ -1,18 +1,18 @@
 {
   "name": "protein-lab",
-  "version": "0.1.0+codex.20260607075551",
-  "description": "AF Server workflows and experiment guardrails for Protein Lab.",
+  "version": "0.1.0+codex.20260607080650",
+  "description": "AF Server, Feishu task, and experiment guardrails for Protein Lab.",
   "author": {
-    "name": "Local developer"
+    "name": "Luke Jiang"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Protein Lab",
-    "shortDescription": "AF Server workflows for Protein Lab experiments.",
-    "longDescription": "Protein Lab helps Codex plan, interpret, and review Protein Lab AlphaFold Server experiments with project-specific guardrails for multi-job results, peptide or fragment comparisons, candidate refinement, and postmortems.",
-    "developerName": "Local developer",
+    "shortDescription": "Protein Lab experiment workflows.",
+    "longDescription": "Protein Lab helps Codex turn Feishu research tasks into local rounds, plan AlphaFold Server experiments, interpret raw AF results, refine peptide or fragment candidates, write Chinese reports, and capture project-specific guardrails from postmortems.",
+    "developerName": "Luke Jiang",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Help me plan or interpret a Protein Lab AlphaFold Server experiment."
+    "defaultPrompt": "Help me run a Protein Lab research task from experiment design through AF Server interpretation and reporting."
   }
 }
