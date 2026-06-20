@@ -40,15 +40,15 @@ Stop for login, captcha, quota exhaustion, payment, or irreversible submission u
 
 ### JSON Upload Failure Recovery
 
-Before uploading, create a short no-space copy of the AF Server JSON under `/tmp` and verify its SHA256 against the canonical round file. Prefer uploading that `/tmp` copy, while keeping the canonical file and manifest in the round directory.
+Before uploading, create a short no-space copy of the AF Server JSON under a writable temp directory (e.g. `${TMPDIR:-/tmp}`) and verify its SHA256 against the canonical round file. Prefer uploading that temp copy, while keeping the canonical file and manifest in the round directory.
 
-Use this upload recovery ladder:
+Cross-platform recovery ladder:
 
 1. Refresh the AlphaFold Server page first, then open `Upload JSON` from a clean page state.
 2. Use the visible `Upload file` control inside the AF Server upload dialog. Verify the dialog changes from `No jobs to process` to `Submit N jobs as drafts`, where `N` equals the local JSON job count.
 3. If browser file injection or `filechooser.setFiles` reports `Not allowed`, classify it as an automation file-access blocker, not a bad JSON and not a reason to ask the user to upload the file manually.
-4. Try automated recovery: short `/tmp` path, re-opened upload dialog, system UI automation when accessibility permission is available, or Chrome extension file-access repair. Do not continue from a dialog that still says `No jobs to process`.
-5. If macOS reports that `osascript` or another UI automation path is not allowed auxiliary/accessibility access, stop and ask for permission repair. The user should not be asked to perform the scientific upload itself unless they explicitly choose to take over.
+4. Try automated recovery: short temp path, re-opened upload dialog, browser-extension file-access repair. Do not continue from a dialog that still says `No jobs to process`.
+5. For OS-specific UI-automation fallbacks (macOS `osascript`/Accessibility, Windows UI Automation, Linux `xdotool`), see `references/upload_recovery_os_notes.md`. If permissions are missing, stop and ask for permission repair rather than retrying.
 6. If `Submit N jobs as drafts` appears, only then click it and proceed to draft verification. If the number differs from local job count, stop and inspect the JSON or upload dialog.
 
 Never turn an upload-automation failure into a manual user-upload request for an automated Protein Lab task. The acceptable user handoff is permission/login/captcha/account repair; the experiment upload itself remains the agent's responsibility.
@@ -60,14 +60,12 @@ Inventory the result package before judging it. If it is a zip, determine whethe
 Run the bundled audit script:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-af-server/scripts/afserver_audit.py <zip-or-dir> --out-dir <output-dir>
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-af-server/scripts/afserver_audit.py" <zip-or-dir> --out-dir <output-dir>
 ```
 
-For legacy multi-job zip summaries:
+When `--out-dir` is set with a zip input, the script extracts to `<output-dir>/_extracted/` so paths recorded in `afserver_audit.json` (relative to `result_root`) stay resolvable. Pass `--no-keep-extracted` to opt out.
 
-```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-af-server/scripts/summarize_afserver_multijob_zip.py <zip-path> --out <output-file>
-```
+`summarize_afserver_multijob_zip.py` is now a deprecated shim that delegates to `afserver_audit.py`; do not use it for new work.
 
 Use generated reports, PAE SVGs, and PDFs only as secondary views.
 

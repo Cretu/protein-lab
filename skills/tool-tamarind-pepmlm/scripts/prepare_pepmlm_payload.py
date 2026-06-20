@@ -12,6 +12,7 @@ from pathlib import Path
 
 JOB_RE = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 NUM_DESIGNS = {"1", "2", "4", "8", "16", "32"}
+CANONICAL_AA = set("ACDEFGHIKLMNPQRSTVWY")
 
 
 class PayloadError(RuntimeError):
@@ -38,7 +39,12 @@ def read_sequence(path: Path | None, inline: str | None) -> str:
     return sequence
 
 
-def build_payload(args: argparse.Namespace) -> dict[str, object]:
+def noncanonical_residues(sequence: str) -> list[str]:
+    return sorted({letter for letter in sequence if letter not in CANONICAL_AA})
+
+
+def build_payload(args: argparse.Namespace) -> tuple[dict[str, object], list[str]]:
+    warnings: list[str] = []
     if not JOB_RE.fullmatch(args.job_name):
         raise PayloadError("jobName must be 1-100 chars: letters, digits, underscore, or hyphen.")
     if args.peptide_length < 1:
@@ -48,6 +54,17 @@ def build_payload(args: argparse.Namespace) -> dict[str, object]:
         raise PayloadError(f"numDesigns must be one of {sorted(NUM_DESIGNS)}.")
 
     sequence = read_sequence(args.input, args.sequence)
+    noncanonical = noncanonical_residues(sequence)
+    if noncanonical:
+        message = f"target sequence contains noncanonical letters: {','.join(noncanonical)}"
+        if args.strict:
+            raise PayloadError(message + " (use --allow-noncanonical to bypass).")
+        if not args.allow_noncanonical:
+            raise PayloadError(
+                message + " — pass --allow-noncanonical to accept, or fix the input."
+            )
+        warnings.append(message)
+
     payload: dict[str, object] = {
         "jobName": args.job_name,
         "type": "pepmlm",
@@ -59,7 +76,7 @@ def build_payload(args: argparse.Namespace) -> dict[str, object]:
     }
     if args.project_tag:
         payload["projectTag"] = args.project_tag
-    return payload
+    return payload, warnings
 
 
 def main() -> int:
@@ -71,10 +88,20 @@ def main() -> int:
     parser.add_argument("--num-designs", default="8")
     parser.add_argument("--project-tag")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--allow-noncanonical",
+        action="store_true",
+        help="Accept BJOUXZ etc. in the target sequence; default rejects them.",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Reject noncanonical residues even when --allow-noncanonical is set.",
+    )
     args = parser.parse_args()
 
     try:
-        payload = build_payload(args)
+        payload, warnings = build_payload(args)
     except PayloadError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -92,6 +119,7 @@ def main() -> int:
                 "targetLength": len(str(settings["targetSequence"])),
                 "peptideLength": settings["peptideLength"],
                 "numDesigns": settings["numDesigns"],
+                "warnings": warnings,
             },
             ensure_ascii=False,
             indent=2,

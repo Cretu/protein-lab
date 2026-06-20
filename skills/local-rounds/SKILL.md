@@ -1,6 +1,6 @@
 ---
 name: local-rounds
-description: "Use for Protein Lab local experiment round folders: creating stable round directories, naming files, initializing plan/status_log skeletons, organizing FASTA/JSON inputs, raw tool outputs, reports, auth_pending files, and traceability links under /Users/luke/Documents/Protein Lab."
+description: "Use for Protein Lab local experiment round folders: creating stable round directories, naming files, initializing plan/status_log skeletons, organizing FASTA/JSON inputs, raw tool outputs, reports, auth_pending files, and traceability links under ${PROTEIN_LAB_ROOT}."
 ---
 
 # Local Rounds
@@ -16,7 +16,7 @@ Use this skill for local experiment folders and file hygiene. It does not design
 
 ## Root And Naming
 
-Use `/Users/luke/Documents/Protein Lab` unless the user gives another path.
+Use `${PROTEIN_LAB_ROOT}` (default `~/Documents/Protein Lab`) unless the user gives another path. Set `PROTEIN_LAB_ROOT` once per environment; `init_round.py` reads it automatically.
 
 Prefer stable, ASCII-friendly directory names:
 
@@ -48,10 +48,11 @@ Good names include the main molecule or construct, comparison target, and scope.
 Use the bundled script for a basic skeleton:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/local-rounds/scripts/init_round.py --title "<任务标题>" --root "/Users/luke/Documents/Protein Lab"
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/local-rounds/scripts/init_round.py" --title "<任务标题>"
+# Optionally override the root: --root "/custom/path"
 ```
 
-The script creates the directory, a plan file, and `status_log.md`. Fill scientific content through `experiment`, tool-specific details through the relevant `tool-*` skill, and final wording through `reporting`.
+The script creates the directory, a plan file, and `status_log.md`. It reads `PROTEIN_LAB_ROOT` for the default location. Fill scientific content through `experiment`, tool-specific details through the relevant `tool-*` skill, and final wording through `reporting`.
 
 ## Status Log Rules
 

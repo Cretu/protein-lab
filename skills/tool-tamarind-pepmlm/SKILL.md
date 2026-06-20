@@ -35,7 +35,7 @@ Use the app API docs as the operational source of truth:
 Create payloads with the bundled script:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-pepmlm/scripts/prepare_pepmlm_payload.py \
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-pepmlm/scripts/prepare_pepmlm_payload.py" \
   --input <target.fasta-or-sequence.txt> \
   --job-name <jobName> \
   --peptide-length 15 \
@@ -43,16 +43,16 @@ python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-pepmlm/scripts/prep
   --out <jobName>_pepmlm_payload.json
 ```
 
-The script accepts FASTA or plain sequence, normalizes whitespace, validates `jobName`, and writes a Tamarind `/submit-job` payload.
+The script accepts FASTA or plain sequence, normalizes whitespace, validates `jobName`, and writes a Tamarind `/submit-job` payload. Noncanonical residues (`BJOUXZ`) are rejected by default; pass `--allow-noncanonical` to accept them with a warning, or `--strict` to reject under any flag.
 
 ## Run Through Tamarind API
 
 Use `tool-tamarind-api` for real API calls:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py submit-job --payload <payload.json>
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py jobs --job-name <jobName>
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py download-result --job-name <jobName> --out <raw-zip>
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" submit-job --payload <payload.json> --confirm
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" jobs --job-name <jobName>
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" download-result --job-name <jobName> --out <raw-zip>
 ```
 
 Record payload path, job name, settings, submission response, polling state, raw zip path, and any blocker in `status_log.md`.
@@ -62,12 +62,14 @@ Record payload path, job name, settings, submission response, polling state, raw
 Always audit raw outputs before interpretation:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-pepmlm/scripts/inspect_pepmlm_result.py \
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-pepmlm/scripts/inspect_pepmlm_result.py" \
   <raw-zip-or-folder> \
   --out-dir <inspection-dir> \
   --expected-length 15 \
   --top-n 12
 ```
+
+Text files over 10 MB are inventoried with `kind=text-too-large` but skipped by the parser; if a real candidate table is that large, split it before re-running. CSV/TSV without a recognizable candidate column are surfaced via the inventory rather than mined with a permissive regex.
 
 Outputs:
 

@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 from datetime import datetime
 from pathlib import Path
+
+
+DEFAULT_ROOT_FALLBACK = "~/Documents/Protein Lab"
 
 
 def slugify(title: str) -> str:
@@ -15,14 +19,26 @@ def slugify(title: str) -> str:
     return title or "experiment_round"
 
 
+def resolve_root(cli_value: str | None) -> Path:
+    candidate = cli_value or os.environ.get("PROTEIN_LAB_ROOT") or DEFAULT_ROOT_FALLBACK
+    return Path(candidate).expanduser().resolve()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Initialize a Protein Lab experiment round directory.")
     parser.add_argument("--title", required=True, help="Task or experiment title")
-    parser.add_argument("--root", default="/Users/luke/Documents/Protein Lab", help="Protein Lab root directory")
+    parser.add_argument(
+        "--root",
+        default=None,
+        help=(
+            "Protein Lab root directory. Defaults to PROTEIN_LAB_ROOT env var, "
+            f"then {DEFAULT_ROOT_FALLBACK}."
+        ),
+    )
     parser.add_argument("--slug", default=None, help="Override generated directory slug")
     args = parser.parse_args()
 
-    root = Path(args.root).expanduser().resolve()
+    root = resolve_root(args.root)
     slug = args.slug or slugify(args.title)
     round_dir = root / slug
     round_dir.mkdir(parents=True, exist_ok=True)

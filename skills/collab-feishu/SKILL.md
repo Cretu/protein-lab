@@ -18,7 +18,7 @@ Use this skill for Feishu/Lark only. It is the collaboration platform skill, not
 
 - Task list: `https://applink.feishu.cn/client/todo/task_list?guid=4aab1a22-13e0-452e-b2df-2be8cca53658`
 - Experiment docs folder: `https://stellarmonic.feishu.cn/drive/folder/XN43fKUBNlnOWSdILdLcW8Ownge?from=from_copylink`
-- Local root: `/Users/luke/Documents/Protein Lab`
+- Local root: `${PROTEIN_LAB_ROOT}` (default `~/Documents/Protein Lab`)
 
 ## CLI Preflight
 

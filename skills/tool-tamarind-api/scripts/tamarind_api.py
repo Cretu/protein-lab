@@ -6,16 +6,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 DEFAULT_BASE_URL = "https://app.tamarind.bio/api/"
+RETRYABLE_STATUS = {429, 502, 503, 504}
 
 
 class TamarindError(RuntimeError):
@@ -52,38 +54,76 @@ def decode_response(data: bytes, content_type: str = "") -> Any:
         return text
 
 
+def _build_request(
+    method: str,
+    path: str,
+    *,
+    payload: Any | None,
+    query: dict[str, Any] | None,
+    body: Any | None,
+    content_type: str | None,
+) -> urllib.request.Request:
+    api_key = require_api_key()
+    headers = {"x-api-key": api_key}
+    request_body: Any | None = body
+    if payload is not None:
+        request_body = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    elif content_type:
+        headers["Content-Type"] = content_type
+    return urllib.request.Request(
+        endpoint_url(path, query),
+        data=request_body,
+        headers=headers,
+        method=method.upper(),
+    )
+
+
+def _sleep_backoff(attempt: int) -> None:
+    time.sleep(min(2 ** attempt, 30))
+
+
 def api_request(
     method: str,
     path: str,
     *,
     payload: Any | None = None,
     query: dict[str, Any] | None = None,
-    data: bytes | None = None,
+    body: Any | None = None,
     content_type: str | None = None,
+    timeout: float = 60.0,
+    max_retries: int = 3,
 ) -> Any:
-    api_key = require_api_key()
-    body: bytes | None = data
-    headers = {"x-api-key": api_key}
-    if payload is not None:
-        body = json.dumps(payload).encode("utf-8")
-        headers["Content-Type"] = "application/json"
-    elif content_type:
-        headers["Content-Type"] = content_type
+    last_error: Exception | None = None
+    for attempt in range(max_retries + 1):
+        request = _build_request(
+            method, path, payload=payload, query=query, body=body, content_type=content_type
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return decode_response(response.read(), response.headers.get("Content-Type", ""))
+        except urllib.error.HTTPError as exc:
+            body_text = exc.read().decode("utf-8", errors="replace")
+            if exc.code in RETRYABLE_STATUS and attempt < max_retries:
+                last_error = exc
+                _sleep_backoff(attempt)
+                continue
+            raise TamarindError(f"HTTP {exc.code} from {path}: {body_text}") from exc
+        except urllib.error.URLError as exc:
+            if attempt < max_retries:
+                last_error = exc
+                _sleep_backoff(attempt)
+                continue
+            raise TamarindError(f"Request failed for {path}: {exc.reason}") from exc
+    raise TamarindError(f"Request failed for {path} after retries: {last_error}")
 
-    request = urllib.request.Request(
-        endpoint_url(path, query),
-        data=body,
-        headers=headers,
-        method=method.upper(),
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            return decode_response(response.read(), response.headers.get("Content-Type", ""))
-    except urllib.error.HTTPError as exc:
-        body_text = exc.read().decode("utf-8", errors="replace")
-        raise TamarindError(f"HTTP {exc.code} from {path}: {body_text}") from exc
-    except urllib.error.URLError as exc:
-        raise TamarindError(f"Request failed for {path}: {exc.reason}") from exc
+
+def stream_download(url: str, out_path: Path, timeout: float = 1800.0) -> int:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url)
+    with urllib.request.urlopen(request, timeout=timeout) as response, out_path.open("wb") as handle:
+        shutil.copyfileobj(response, handle, length=1024 * 1024)
+    return out_path.stat().st_size
 
 
 def load_json(path: Path) -> Any:
@@ -93,6 +133,22 @@ def load_json(path: Path) -> Any:
 
 def print_json(value: Any) -> None:
     print(json.dumps(value, ensure_ascii=False, indent=2))
+
+
+def payload_summary(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {"type": type(payload).__name__}
+    keys = sorted(payload.keys())
+    summary: dict[str, Any] = {"keys": keys}
+    for label in ("jobName", "batchName", "type"):
+        if label in payload:
+            summary[label] = payload[label]
+    settings = payload.get("settings")
+    if isinstance(settings, dict):
+        summary["settings_keys"] = sorted(settings.keys())
+    elif isinstance(settings, list):
+        summary["settings_count"] = len(settings)
+    return summary
 
 
 def cmd_tools(args: argparse.Namespace) -> None:
@@ -109,12 +165,24 @@ def cmd_tools(args: argparse.Namespace) -> None:
     print_json(data)
 
 
+def _confirm_submission(args: argparse.Namespace, payload: Any, action: str) -> None:
+    if args.confirm:
+        return
+    summary = {"action": action, "payload_summary": payload_summary(payload)}
+    print_json({"dry_run": True, **summary})
+    raise TamarindError(f"{action} requires --confirm to actually submit. Dry-run summary printed above.")
+
+
 def cmd_submit_job(args: argparse.Namespace) -> None:
-    print_json(api_request("POST", "submit-job", payload=load_json(args.payload)))
+    payload = load_json(args.payload)
+    _confirm_submission(args, payload, "submit-job")
+    print_json(api_request("POST", "submit-job", payload=payload))
 
 
 def cmd_submit_batch(args: argparse.Namespace) -> None:
-    print_json(api_request("POST", "submit-batch", payload=load_json(args.payload)))
+    payload = load_json(args.payload)
+    _confirm_submission(args, payload, "submit-batch")
+    print_json(api_request("POST", "submit-batch", payload=payload))
 
 
 def cmd_jobs(args: argparse.Namespace) -> None:
@@ -153,26 +221,36 @@ def cmd_download_result(args: argparse.Namespace) -> None:
 
     result_response = api_request("POST", "result", payload=payload)
     url = normalize_presigned_url(result_response)
-    out_path = args.out
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(url, timeout=300) as response:
-        out_path.write_bytes(response.read())
-    print_json({"jobName": args.job_name, "out": str(out_path), "bytes": out_path.stat().st_size})
+    size = stream_download(url, args.out, timeout=args.download_timeout)
+    print_json({"jobName": args.job_name, "out": str(args.out), "bytes": size})
 
 
 def cmd_upload(args: argparse.Namespace) -> None:
-    source = args.path
+    source: Path = args.path
     filename = args.filename or source.name
     query = {"folder": args.folder}
-    print_json(
-        api_request(
-            "PUT",
-            f"upload/{urllib.parse.quote(filename)}",
-            query=query,
-            data=source.read_bytes(),
-            content_type="application/octet-stream",
-        )
-    )
+    size = source.stat().st_size
+
+    api_key = require_api_key()
+    url = endpoint_url(f"upload/{urllib.parse.quote(filename)}", query)
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/octet-stream",
+        "Content-Length": str(size),
+    }
+
+    # Open as a binary file object so urllib/http.client streams via .read()
+    # instead of buffering the entire payload in memory.
+    with source.open("rb") as handle:
+        request = urllib.request.Request(url, data=handle, method="PUT", headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=args.upload_timeout) as response:
+                print_json(decode_response(response.read(), response.headers.get("Content-Type", "")))
+        except urllib.error.HTTPError as exc:
+            body_text = exc.read().decode("utf-8", errors="replace")
+            raise TamarindError(f"HTTP {exc.code} from upload: {body_text}") from exc
+        except urllib.error.URLError as exc:
+            raise TamarindError(f"Upload failed: {exc.reason}") from exc
 
 
 def cmd_files(args: argparse.Namespace) -> None:
@@ -209,8 +287,20 @@ def cmd_delete_file(args: argparse.Namespace) -> None:
 def cmd_poll(args: argparse.Namespace) -> None:
     deadline = time.monotonic() + args.timeout
     last: Any = None
+    consecutive_errors = 0
     while True:
-        last = api_request("GET", "jobs", query={"jobName": args.job_name})
+        try:
+            last = api_request("GET", "jobs", query={"jobName": args.job_name})
+            consecutive_errors = 0
+        except TamarindError as exc:
+            consecutive_errors += 1
+            if consecutive_errors >= args.max_errors:
+                raise
+            if time.monotonic() >= deadline:
+                print_json({"timeout": True, "last_error": str(exc), "last": last})
+                raise SystemExit(2)
+            _sleep_backoff(consecutive_errors)
+            continue
         status = ""
         if isinstance(last, dict):
             status = str(last.get("batchStatus") or last.get("JobStatus") or "")
@@ -223,6 +313,22 @@ def cmd_poll(args: argparse.Namespace) -> None:
         time.sleep(args.interval)
 
 
+def _add_submit_subparser(
+    subparsers: Any,
+    name: str,
+    help_text: str,
+    handler: Callable[[argparse.Namespace], None],
+) -> None:
+    parser = subparsers.add_parser(name, help=help_text)
+    parser.add_argument("--payload", type=Path, required=True)
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Actually submit; without this flag the command prints a dry-run summary and exits non-zero.",
+    )
+    parser.set_defaults(func=handler)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -231,13 +337,8 @@ def build_parser() -> argparse.ArgumentParser:
     tools.add_argument("--tool", help="Filter by tool name or display name.")
     tools.set_defaults(func=cmd_tools)
 
-    submit_job = subparsers.add_parser("submit-job", help="Submit a single job from JSON payload.")
-    submit_job.add_argument("--payload", type=Path, required=True)
-    submit_job.set_defaults(func=cmd_submit_job)
-
-    submit_batch = subparsers.add_parser("submit-batch", help="Submit a batch job from JSON payload.")
-    submit_batch.add_argument("--payload", type=Path, required=True)
-    submit_batch.set_defaults(func=cmd_submit_batch)
+    _add_submit_subparser(subparsers, "submit-job", "Submit a single job from JSON payload.", cmd_submit_job)
+    _add_submit_subparser(subparsers, "submit-batch", "Submit a batch job from JSON payload.", cmd_submit_batch)
 
     jobs = subparsers.add_parser("jobs", help="Query jobs.")
     jobs.add_argument("--job-name")
@@ -254,6 +355,12 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--job-name", required=True)
     poll.add_argument("--interval", type=float, default=15.0)
     poll.add_argument("--timeout", type=float, default=3600.0)
+    poll.add_argument(
+        "--max-errors",
+        type=int,
+        default=5,
+        help="Number of consecutive transport errors to tolerate before giving up.",
+    )
     poll.set_defaults(func=cmd_poll)
 
     result = subparsers.add_parser("download-result", help="Download result zip/file for a job.")
@@ -262,12 +369,24 @@ def build_parser() -> argparse.ArgumentParser:
     result.add_argument("--file-name")
     result.add_argument("--job-email")
     result.add_argument("--pdbs-only", action="store_true")
+    result.add_argument(
+        "--download-timeout",
+        type=float,
+        default=1800.0,
+        help="Per-request timeout for the streaming download (seconds).",
+    )
     result.set_defaults(func=cmd_download_result)
 
     upload = subparsers.add_parser("upload", help="Upload a file to Tamarind.")
     upload.add_argument("--path", type=Path, required=True)
     upload.add_argument("--filename")
     upload.add_argument("--folder")
+    upload.add_argument(
+        "--upload-timeout",
+        type=float,
+        default=1800.0,
+        help="Per-request timeout for the streaming upload (seconds).",
+    )
     upload.set_defaults(func=cmd_upload)
 
     files = subparsers.add_parser("files", help="List uploaded files.")

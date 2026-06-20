@@ -1,4 +1,11 @@
 .DS_Store
 __pycache__/
 *.pyc
+.pytest_cache/
+.venv/
+.env
+.env.*
 afserver_audit_out/
+*_extracted/
+pepmlm_inspection_out/
+*.zip

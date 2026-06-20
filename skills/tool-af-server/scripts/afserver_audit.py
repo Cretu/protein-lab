@@ -4,6 +4,12 @@
 The script is intentionally lightweight: it inventories jobs, pairs raw
 summary/full_data JSON files, calculates common two-chain interface metrics,
 and emits JSON plus Markdown for human interpretation.
+
+Paths recorded in outputs are relative to the result root (zip internal
+path or input directory) so they stay valid after the temporary
+extraction directory is cleaned up. When ``--out-dir`` is supplied and a
+zip is the input, the archive is extracted into ``<out-dir>/_extracted``
+so the relative paths can be resolved later.
 """
 
 from __future__ import annotations
@@ -11,11 +17,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import statistics
 import tempfile
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 
 MODEL_RE = re.compile(r"_(?:summary_confidences|full_data)_(\d+)\.json$")
@@ -52,14 +60,33 @@ def ordered_unique(values: list[str]) -> list[str]:
     return result
 
 
-def source_root(path: Path, temp_root: Path) -> Path:
-    if path.is_file() and zipfile.is_zipfile(path):
-        with zipfile.ZipFile(path) as archive:
-            archive.extractall(temp_root)
-        return temp_root
+@contextmanager
+def extracted_root(path: Path, persistent_dir: Path | None) -> Iterator[Path]:
+    """Yield a directory rooted at the result tree.
+
+    If ``path`` is a directory, yield it as-is. If it is a zip and
+    ``persistent_dir`` is provided, extract into that directory so the
+    paths survive after the context exits. Otherwise extract into a
+    temporary directory that is cleaned up on exit.
+    """
     if path.is_dir():
-        return path
-    raise FileNotFoundError(f"Input is not an AF Server zip or directory: {path}")
+        yield path
+        return
+    if not (path.is_file() and zipfile.is_zipfile(path)):
+        raise FileNotFoundError(f"Input is not an AF Server zip or directory: {path}")
+    if persistent_dir is not None:
+        if persistent_dir.exists():
+            shutil.rmtree(persistent_dir)
+        persistent_dir.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(path) as archive:
+            archive.extractall(persistent_dir)
+        yield persistent_dir
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_root = Path(tmp)
+        with zipfile.ZipFile(path) as archive:
+            archive.extractall(tmp_root)
+        yield tmp_root
 
 
 def find_job_dirs(root: Path) -> list[Path]:
@@ -167,12 +194,12 @@ def summarize_pair(full: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def summarize_model(summary_path: Path, full_path: Path | None) -> dict[str, Any]:
+def summarize_model(root: Path, summary_path: Path, full_path: Path | None) -> dict[str, Any]:
     summary = read_json(summary_path)
     row: dict[str, Any] = {
         "model": model_index(summary_path),
-        "summary_path": str(summary_path),
-        "full_data_path": str(full_path) if full_path else None,
+        "summary_path": str(summary_path.relative_to(root)),
+        "full_data_path": str(full_path.relative_to(root)) if full_path else None,
         "ranking_score": summary.get("ranking_score"),
         "iptm": summary.get("iptm"),
         "ptm": summary.get("ptm"),
@@ -201,7 +228,7 @@ def summarize_job(root: Path, job_dir: Path) -> dict[str, Any]:
     }
 
     models = [
-        summarize_model(path, full_by_index.get(model_index(path)))
+        summarize_model(root, path, full_by_index.get(model_index(path)))
         for path in summary_paths
     ]
     models.sort(
@@ -229,10 +256,8 @@ def summarize_job(root: Path, job_dir: Path) -> dict[str, Any]:
     }
 
 
-def audit(path: Path) -> dict[str, Any]:
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_root = Path(tmp)
-        root = source_root(path.resolve(), tmp_root)
+def audit(path: Path, persistent_extract_dir: Path | None) -> dict[str, Any]:
+    with extracted_root(path.resolve(), persistent_extract_dir) as root:
         jobs = [summarize_job(root, job_dir) for job_dir in find_job_dirs(root)]
         warnings: list[str] = []
         if not jobs:
@@ -242,6 +267,8 @@ def audit(path: Path) -> dict[str, Any]:
 
         return {
             "source": str(path.resolve()),
+            "result_root": str(root.resolve()),
+            "paths_relative_to": "result_root",
             "job_count": len(jobs),
             "warnings": warnings,
             "jobs": jobs,
@@ -253,6 +280,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "# AF Server Audit",
         "",
         f"- Source: `{summary['source']}`",
+        f"- Result root: `{summary['result_root']}`",
         f"- Jobs found: {summary['job_count']}",
     ]
     if summary["warnings"]:
@@ -320,12 +348,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", help="AF Server zip or extracted result directory")
     parser.add_argument("--out-dir", default="", help="Directory for afserver_audit.json and afserver_audit.md")
+    parser.add_argument(
+        "--keep-extracted",
+        action="store_true",
+        help="When --out-dir is set and the input is a zip, persist the extraction under <out-dir>/_extracted (default).",
+    )
+    parser.add_argument(
+        "--no-keep-extracted",
+        dest="keep_extracted",
+        action="store_false",
+        help="Force a temp-dir extraction even when --out-dir is set; relative paths in JSON will not be resolvable.",
+    )
+    parser.set_defaults(keep_extracted=True)
     args = parser.parse_args()
 
-    summary = audit(Path(args.input))
-    if args.out_dir:
-        out_dir = Path(args.out_dir)
+    out_dir = Path(args.out_dir) if args.out_dir else None
+    persistent_extract_dir = (out_dir / "_extracted") if (out_dir and args.keep_extracted) else None
+    if out_dir is not None:
         out_dir.mkdir(parents=True, exist_ok=True)
+
+    summary = audit(Path(args.input), persistent_extract_dir)
+    if out_dir is not None:
         (out_dir / "afserver_audit.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",

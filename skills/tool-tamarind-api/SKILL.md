@@ -30,13 +30,13 @@ Tamarind docs expose an OpenAPI file, but its server examples can differ from th
 Use the bundled helper for API calls:
 
 ```bash
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py tools --tool pepmlm
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py submit-job --payload <payload.json>
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py jobs --job-name <jobName>
-python3 /Users/luke/plugins/protein-lab/skills/tool-tamarind-api/scripts/tamarind_api.py download-result --job-name <jobName> --out <raw.zip>
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" tools --tool pepmlm
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" submit-job --payload <payload.json> --confirm
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" jobs --job-name <jobName>
+python3 "${PROTEIN_LAB_PLUGIN_ROOT}/skills/tool-tamarind-api/scripts/tamarind_api.py" download-result --job-name <jobName> --out <raw.zip>
 ```
 
-The script prints JSON or saves the requested result file. It never reads API keys from files and never writes secrets.
+The script prints JSON or streams the requested result file. It never reads API keys from files and never writes secrets. `submit-job` and `submit-batch` require `--confirm`; without it they print a dry-run summary and exit non-zero. Downloads and uploads stream to/from disk; transient `429/502/503/504` responses are retried with exponential backoff.
 
 ## Core Workflow
 

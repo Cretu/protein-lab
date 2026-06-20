@@ -66,9 +66,10 @@ Stop or deprioritize when gains come from one model only, flexible-tail artifact
 
 ## Handoff
 
-- Use `local-rounds` to create or update local files.
+- Use `local-rounds` to create or update local files under `${PROTEIN_LAB_ROOT}`.
 - Use `tool-af-server` when AlphaFold Server is the tool.
-- Use `tool-tamarind-pepmlm` when candidate peptides come from PepMLM.
-- Use future `tool-*` skills for future dedicated tools.
-- Use `reporting` for final summaries, reports, and postmortems.
+- Use `tool-tamarind-api` for shared Tamarind platform calls and `tool-tamarind-pepmlm` for PepMLM candidate work.
+- Use `tool-modal` when the task needs custom Modal compute.
 - Use `collab-feishu` only when the plan or result must be posted to Feishu.
+- Use `reporting` for final summaries, reports, and postmortems.
+- Use future `tool-*` skills for future dedicated tools.
