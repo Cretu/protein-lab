@@ -1,6 +1,7 @@
 {
   "name": "protein-lab",
-  "version": "0.1.0+codex.20260608071307",
+  "version": "0.2.0",
+  "license": "MIT",
   "description": "Dry-lab task intake, experiment planning, local rounds, Modal compute, Tamarind/PepMLM and AF Server tools, collaboration, reporting, and guardrails for Protein Lab.",
   "author": {
     "name": "Luke Jiang"

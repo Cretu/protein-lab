@@ -44,6 +44,7 @@ Before routing, identify:
 
 ## Default Context
 
-- Local project root: `/Users/luke/Documents/Protein Lab`
+- Local project root: `${PROTEIN_LAB_ROOT}` (falls back to `~/Documents/Protein Lab` when the env var is unset).
+- Plugin scripts root: `${PROTEIN_LAB_PLUGIN_ROOT}` — wherever this plugin is installed.
 - User-facing language: Chinese unless the user requests otherwise.
 - Evidence priority: raw outputs and local source files first, generated summaries second.
