@@ -29,6 +29,8 @@ Use this order unless the user asks otherwise:
 
 For short collaboration-ready updates, keep the conclusion compact, include only essential numbers, and list attachments by filename or path. Use `collab-feishu` for actual Feishu operations.
 
+When reporting PepMLM results, use the candidate table and interpretation produced by `tool-tamarind-pepmlm`. Do not reinterpret raw PepMLM zips directly from this skill.
+
 ## Language Rules
 
 - Use Chinese for user-facing reports by default.

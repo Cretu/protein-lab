@@ -14,7 +14,7 @@ Use this skill for experiment design and next-round decision making. It owns the
 - Results already exist and the user asks what to test next.
 - The user wants wet-lab shortlist logic or stop/go reasoning.
 
-Do not use this skill for Feishu operations, local file housekeeping, final report writing, or AlphaFold Server-specific submission and metric parsing.
+Do not use this skill for Feishu operations, local file housekeeping, final report writing, AlphaFold Server-specific submission and metric parsing, or Tamarind/PepMLM API mechanics.
 
 ## Required Planning Output
 
@@ -68,6 +68,7 @@ Stop or deprioritize when gains come from one model only, flexible-tail artifact
 
 - Use `local-rounds` to create or update local files.
 - Use `tool-af-server` when AlphaFold Server is the tool.
+- Use `tool-tamarind-pepmlm` when candidate peptides come from PepMLM.
 - Use future `tool-*` skills for future dedicated tools.
 - Use `reporting` for final summaries, reports, and postmortems.
 - Use `collab-feishu` only when the plan or result must be posted to Feishu.

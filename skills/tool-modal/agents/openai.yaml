@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modal Compute"
+  short_description: "Run Protein Lab workloads on Modal."
+  default_prompt: "Use Modal for a Protein Lab dry-lab compute task."

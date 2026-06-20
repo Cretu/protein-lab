@@ -20,6 +20,9 @@ The plugin name already provides the `protein-lab` namespace, so skill names sta
 ### External Platforms And Tools
 
 - `skills/tool-af-server/SKILL.md`: AlphaFold Server panel checks, JSON import, submission, queue tracking, downloads, raw result audit, and interpretation.
+- `skills/tool-modal/SKILL.md`: Modal compute setup, cost guardrails, custom CPU/GPU pilot workflows, Volumes/Secrets handling, and Chai-1/ESMFold2/Boltz-2 style handoff.
+- `skills/tool-tamarind-api/SKILL.md`: Tamarind Bio platform API preflight, tool discovery, submission, polling, downloads, and file operations.
+- `skills/tool-tamarind-pepmlm/SKILL.md`: PepMLM payload preparation, result download handoff, raw result audit, candidate extraction, conservative interpretation, and AF/experiment shortlist handoff.
 - `skills/collab-feishu/SKILL.md`: Feishu/Lark CLI, authorization, tasks, documents, comments, folders, and collaboration updates.
 
 ### Output
@@ -31,6 +34,10 @@ The plugin name already provides the `protein-lab` namespace, so skill names sta
 - `skills/local-rounds/scripts/init_round.py`: Local round skeleton helper.
 - `skills/tool-af-server/scripts/afserver_audit.py`: Lightweight AF Server zip or directory audit script.
 - `skills/tool-af-server/scripts/summarize_afserver_multijob_zip.py`: Multi-job AF Server zip summary helper.
+- `skills/tool-modal/references/modal-protein-lab-notes.md`: Modal docs summary and Protein Lab operating pattern for custom compute tasks.
+- `skills/tool-tamarind-api/scripts/tamarind_api.py`: Tamarind REST API helper that reads `TAMARIND_API_KEY` from the environment.
+- `skills/tool-tamarind-pepmlm/scripts/prepare_pepmlm_payload.py`: PepMLM submit-job payload builder.
+- `skills/tool-tamarind-pepmlm/scripts/inspect_pepmlm_result.py`: PepMLM raw result inventory, candidate extraction, and interpretation helper.
 
 ## Principle
 

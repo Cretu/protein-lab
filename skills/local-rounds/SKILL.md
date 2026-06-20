@@ -33,8 +33,11 @@ Good names include the main molecule or construct, comparison target, and scope.
 - `<slug>_plan.md`
 - `<slug>.fasta` when sequence review is useful
 - tool input files such as `<slug>_afserver.json`
+- Tamarind payloads such as `<slug>_pepmlm_payload.json`
 - manifest or comparison table when there are multiple jobs
 - raw outputs such as `folds_<slug>_afserver.zip`
+- Tamarind raw outputs such as `<jobName>_pepmlm_raw.zip`
+- tool inspection outputs such as `pepmlm_result_inventory.tsv`, `pepmlm_candidates.tsv`, and `pepmlm_interpretation.md`
 - generated audit directories
 - final reports or summaries
 - `status_log.md`
@@ -56,8 +59,9 @@ Record:
 
 - source request and collaboration links, if any
 - exact input source, accession, sequence length, construct boundary, and file path
-- tool name, parameters, seed, job ID, submission time, and queue state
+- tool name, parameters, seed when relevant, job ID or job name, submission time, and queue state
 - download path, file size, and raw output checksum when useful
+- parsed candidate table path and interpretation path when a tool-specific parser was used
 - blocker, authorization state, user handoff, and retry decision
 - final report path and postmortem guardrails
 

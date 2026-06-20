@@ -1,7 +1,7 @@
 {
   "name": "protein-lab",
-  "version": "0.1.0+codex.20260608054415",
-  "description": "Dry-lab task intake, experiment planning, local rounds, tools, collaboration, reporting, and guardrails for Protein Lab.",
+  "version": "0.1.0+codex.20260608071307",
+  "description": "Dry-lab task intake, experiment planning, local rounds, Modal compute, Tamarind/PepMLM and AF Server tools, collaboration, reporting, and guardrails for Protein Lab.",
   "author": {
     "name": "Luke Jiang"
   },
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Protein Lab",
     "shortDescription": "Protein Lab dry-lab workflows.",
-    "longDescription": "Protein Lab helps Codex triage life-science dry-lab tasks, plan experiments, manage local rounds, run tool-specific workflows, work with collaboration platforms, interpret raw evidence, write Chinese reports, and capture project-specific guardrails. AlphaFold Server is the first tool skill and Feishu is the first collaboration platform skill.",
+    "longDescription": "Protein Lab helps Codex triage life-science dry-lab tasks, plan experiments, manage local rounds, run tool-specific workflows, work with collaboration platforms, interpret raw evidence, write Chinese reports, and capture project-specific guardrails. It includes Modal compute workflows for custom CPU/GPU pilots, AlphaFold Server workflows, Tamarind Bio API, and PepMLM peptide-candidate generation, result auditing, and conservative shortlist handoff.",
     "developerName": "Luke Jiang",
     "category": "Productivity",
     "capabilities": [],
