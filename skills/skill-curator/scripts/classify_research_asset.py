@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from typing import Any
 
 
@@ -11,11 +12,22 @@ WIKI_HINTS = ("result", "experiment", "literature", "paper", "decision", "项目
 SKILL_HINTS = ("workflow", "repeat", "procedure", "guardrail", "流程", "反复", "规范", "护栏")
 
 
+def _hint_matches(text: str, hint: str) -> bool:
+    """Word-boundary match for ASCII hints to avoid 'api' in 'rapid' / 'cli' in 'clinical'.
+
+    Non-ASCII (Chinese) hints fall back to substring matching because word
+    boundaries between CJK characters do not behave the way one would want.
+    """
+    if hint.isascii():
+        return re.search(rf"\b{re.escape(hint)}\b", text) is not None
+    return hint in text
+
+
 def classify(text: str, *, repeatable: bool = False, team_specific: bool = False) -> dict[str, Any]:
     lowered = text.lower()
-    has_tool = any(hint in lowered for hint in TOOL_HINTS)
-    has_wiki = any(hint in lowered for hint in WIKI_HINTS)
-    has_skill = repeatable or any(hint in lowered for hint in SKILL_HINTS)
+    has_tool = any(_hint_matches(lowered, hint) for hint in TOOL_HINTS)
+    has_wiki = any(_hint_matches(lowered, hint) for hint in WIKI_HINTS)
+    has_skill = repeatable or any(_hint_matches(lowered, hint) for hint in SKILL_HINTS)
     if has_tool and has_skill:
         primary = "tool-creator"
         reason = "repeatable third-party tool operation should become a tool-* skill"

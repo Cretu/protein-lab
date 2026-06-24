@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 DEFAULT_BASE_URL = "https://app.tamarind.bio/api/"
 RETRYABLE_STATUS = {429, 502, 503, 504}
+ALLOWED_DOWNLOAD_SCHEMES = {"http", "https"}
 
 
 class TamarindError(RuntimeError):
@@ -119,6 +120,9 @@ def api_request(
 
 
 def stream_download(url: str, out_path: Path, timeout: float = 1800.0) -> int:
+    scheme = urllib.parse.urlparse(url).scheme.lower()
+    if scheme not in ALLOWED_DOWNLOAD_SCHEMES:
+        raise TamarindError(f"Refusing to download from unsupported URL scheme: {scheme!r}")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url)
     with urllib.request.urlopen(request, timeout=timeout) as response, out_path.open("wb") as handle:

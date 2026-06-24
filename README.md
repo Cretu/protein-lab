@@ -100,9 +100,11 @@ python3 -m pytest tests/
 
 Release checks:
 
+The first two commands use Codex's bundled `plugin-creator` and `skill-creator` system skills; substitute the location of your Codex skills root (e.g. `~/.codex/skills/.system`) for `<codex-skills-root>`. They are not part of this repo.
+
 ```bash
-python3 /Users/luke/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py /path/to/protein-lab
-python3 /Users/luke/.codex/skills/.system/skill-creator/scripts/quick_validate.py /path/to/protein-lab/skills/<skill>
+python3 <codex-skills-root>/plugin-creator/scripts/validate_plugin.py /path/to/protein-lab
+python3 <codex-skills-root>/skill-creator/scripts/quick_validate.py /path/to/protein-lab/skills/<skill>
 python3 -m compileall skills tests
 ```
 

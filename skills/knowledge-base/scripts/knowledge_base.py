@@ -10,7 +10,20 @@ from typing import Any
 
 
 WIKI_DIRS = ["projects", "experiments", "tools", "protocols", "decisions", "literature", "guardrails"]
-SECRET_PATTERNS = (r"api[\s_-]*key", r"token", r"password", r"secret", r"cookie")
+# Word-bounded patterns so legitimate notes mentioning "tokenizer",
+# "password-less auth", "HTTP cookie", or "secret sauce" are not rejected.
+# This is a soft hint guard, not a real secret detector.
+SECRET_PATTERNS = (
+    r"\bapi[\s_-]*key\b",
+    r"\btoken\b",
+    r"\bpassword\b",
+    r"\bsecret\b",
+    r"\bcookie\b",
+)
+HIGH_ENTROPY_PATTERNS = (
+    r"\b[A-Fa-f0-9]{40,}\b",
+    r"\b[A-Za-z0-9+]{40,}={0,2}\b",
+)
 
 
 def slugify(title: str) -> str:
@@ -22,6 +35,8 @@ def assert_no_secret_text(text: str) -> None:
     lowered = text.lower()
     if any(re.search(pattern, lowered) for pattern in SECRET_PATTERNS):
         raise ValueError("Refusing to write text containing secret-like words.")
+    if any(re.search(pattern, text) for pattern in HIGH_ENTROPY_PATTERNS):
+        raise ValueError("Refusing to write text containing a high-entropy token-like string.")
 
 
 def init_wiki(root: Path) -> list[Path]:

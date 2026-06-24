@@ -16,3 +16,11 @@ def test_experiment_result_routes_to_knowledge_base() -> None:
 def test_team_specific_workflow_routes_to_team_skill() -> None:
     result = curator.classify("repeatable internal protocol workflow", repeatable=True, team_specific=True)
     assert result["primary"] == "team-research-skill"
+
+
+def test_word_boundaries_avoid_substring_false_positives() -> None:
+    # "rapid" contains 'api' and "clinical" contains 'cli' — under the old
+    # substring rule both flipped has_tool=True. With word boundaries the text
+    # falls through to the default knowledge-base bucket.
+    result = curator.classify("rapid clinical project background")
+    assert result["primary"] == "knowledge-base"

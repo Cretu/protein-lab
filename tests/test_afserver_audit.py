@@ -4,6 +4,8 @@ import json
 import zipfile
 from pathlib import Path
 
+import pytest
+
 import afserver_audit as af  # noqa: E402
 
 
@@ -78,6 +80,29 @@ def test_render_markdown_runs(tmp_path: Path) -> None:
     text = af.render_markdown(summary)
     assert "demo_job" in text
     assert "Job Summary" in text
+
+
+def test_summarize_pair_flags_skipped_chains_for_three_chain_input() -> None:
+    full = {
+        "token_chain_ids": ["A", "A", "B", "B", "C", "C"],
+        "token_res_ids": [1, 2, 1, 2, 1, 2],
+        "pae": [[1.0 if i != j else 0.0 for j in range(6)] for i in range(6)],
+        "contact_probs": [[0.9 if i != j else 0.0 for j in range(6)] for i in range(6)],
+        "atom_chain_ids": ["A", "A", "B", "B", "C", "C"],
+        "atom_plddts": [80.0, 80.0, 70.0, 70.0, 60.0, 60.0],
+    }
+    summary = af.summarize_pair(full)
+    assert summary["primary_pair"] == ["A", "B"]
+    assert summary["analyzed_pair_only"] is True
+    assert summary["skipped_chains"] == ["C"]
+
+
+def test_extracted_root_rejects_unsafe_persistent_dir(tmp_path: Path) -> None:
+    zip_path = _make_af_zip(tmp_path)
+    bad_dir = tmp_path / "not_extracted"
+    with pytest.raises(ValueError):
+        with af.extracted_root(zip_path, bad_dir):
+            pass
 
 
 def test_directory_input_uses_relative_paths(tmp_path: Path) -> None:

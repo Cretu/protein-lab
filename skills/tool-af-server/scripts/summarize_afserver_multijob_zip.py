@@ -14,6 +14,7 @@ compatibility and prints a deprecation notice on stderr.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -36,7 +37,7 @@ def main() -> int:
     rendered = (
         afserver_audit.render_markdown(summary)
         if args.format == "markdown"
-        else __import__("json").dumps(summary, ensure_ascii=False, indent=2)
+        else json.dumps(summary, ensure_ascii=False, indent=2)
     )
     if args.out:
         Path(args.out).expanduser().write_text(rendered + "\n", encoding="utf-8")
