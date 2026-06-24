@@ -14,20 +14,29 @@ Use this skill for Feishu/Lark only. It is the collaboration platform skill, not
 - A Feishu task/document is the source of a Protein Lab experiment.
 - Feishu access is blocked by missing scopes, bot/user permission, or login state.
 
-## Fixed Protein Lab Context
+## Configured Protein Lab Context
 
-- Task list: `https://applink.feishu.cn/client/todo/task_list?guid=4aab1a22-13e0-452e-b2df-2be8cca53658`
-- Experiment docs folder: `https://stellarmonic.feishu.cn/drive/folder/XN43fKUBNlnOWSdILdLcW8Ownge?from=from_copylink`
-- Local root: `${PROTEIN_LAB_ROOT}` (default `~/Documents/Protein Lab`)
+Feishu/Lark is optional and team-specific. Do not assume Luke's task list, tenant, or document folder on a new device.
+
+Read the nearest project-local context from `<workspace-root>/.protein-lab/project.json` first, then fall back to `~/.config/protein-lab/config.json` when available:
+
+- `feishu.task_list_url`
+- `feishu.docs_folder_url`
+- `feishu.tenant_domain`
+- `workspace_root`
+
+If these are missing, use `setup` to configure them or ask the user for the exact task list/document folder needed for this operation.
+
+When multiple projects are active locally, do not reuse Feishu task lists, document folders, or tenant assumptions across projects.
 
 ## CLI Preflight
 
 Before mutating Feishu resources, check `lark-cli` and access with read-only calls when possible:
 
 ```bash
-lark-cli task tasklists get --as user --params '{"tasklist_guid":"4aab1a22-13e0-452e-b2df-2be8cca53658"}'
-lark-cli task tasklists tasks --as user --params '{"tasklist_guid":"4aab1a22-13e0-452e-b2df-2be8cca53658","completed":false,"page_size":20}'
-lark-cli drive files list --as user --params '{"folder_token":"XN43fKUBNlnOWSdILdLcW8Ownge","order_by":"EditedTime","direction":"DESC","page_size":10}'
+lark-cli task tasklists get --as user --params '{"tasklist_guid":"<configured-tasklist-guid>"}'
+lark-cli task tasklists tasks --as user --params '{"tasklist_guid":"<configured-tasklist-guid>","completed":false,"page_size":20}'
+lark-cli drive files list --as user --params '{"folder_token":"<configured-folder-token>","order_by":"EditedTime","direction":"DESC","page_size":10}'
 ```
 
 Prefer `--as user` for user-visible tasks, docs, comments, and folder operations. Use `--as bot` only when bot access to the target resource is confirmed.

@@ -66,7 +66,7 @@ Stop or deprioritize when gains come from one model only, flexible-tail artifact
 
 ## Handoff
 
-- Use `local-rounds` to create or update local files under `${PROTEIN_LAB_ROOT}`.
+- Use `local-rounds` to create or update local files under the current or configured project workspace.
 - Use `tool-af-server` when AlphaFold Server is the tool.
 - Use `tool-tamarind-api` for shared Tamarind platform calls and `tool-tamarind-pepmlm` for PepMLM candidate work.
 - Use `tool-modal` when the task needs custom Modal compute.

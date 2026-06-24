@@ -13,6 +13,7 @@ Use this skill for written outputs. It produces content only; it does not post t
 - A dry-lab result needs a conservative Chinese interpretation.
 - A task had friction and needs a postmortem or reusable guardrail.
 - The user wants a short update that can be shared elsewhere.
+- Setup, tool onboarding, skill curation, or wiki indexing needs a concise handoff summary.
 
 ## Chinese Report Shape
 
@@ -49,6 +50,18 @@ When the task had friction, write:
 4. what fixed it
 5. durable guardrail
 6. whether a skill/plugin update is needed
+
+## Setup And Knowledge Reports
+
+For setup, tool onboarding, skill curation, or wiki updates, keep the report operational:
+
+1. 当前状态
+2. 已配置/已验证的内容
+3. 还缺什么
+4. 阻塞项或安全边界
+5. 建议下一步
+
+Do not include secrets, tokens, API keys, cookies, or private account exports. Use `setup` for environment checks and `knowledge-base` for wiki writes.
 
 ## Final Checks
 

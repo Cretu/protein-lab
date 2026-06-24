@@ -1,19 +1,19 @@
 {
   "name": "protein-lab",
-  "version": "0.2.0",
+  "version": "0.3.0+codex.20260624101302",
   "license": "MIT",
-  "description": "Dry-lab task intake, experiment planning, local rounds, Modal compute, Tamarind/PepMLM and AF Server tools, collaboration, reporting, and guardrails for Protein Lab.",
+  "description": "Portable dry-lab onboarding, project workspaces, tool creation, skill curation, knowledge-base/wiki workflows, experiment planning, external tools, collaboration, reporting, and guardrails for Protein Lab.",
   "author": {
     "name": "Luke Jiang"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Protein Lab",
-    "shortDescription": "Protein Lab dry-lab workflows.",
-    "longDescription": "Protein Lab helps Codex triage life-science dry-lab tasks, plan experiments, manage local rounds, run tool-specific workflows, work with collaboration platforms, interpret raw evidence, write Chinese reports, and capture project-specific guardrails. It includes Modal compute workflows for custom CPU/GPU pilots, AlphaFold Server workflows, Tamarind Bio API, and PepMLM peptide-candidate generation, result auditing, and conservative shortlist handoff.",
+    "shortDescription": "Portable Protein Lab dry-lab workspace.",
+    "longDescription": "Protein Lab helps Codex onboard new devices and teams, diagnose local environments, configure project workspaces, manage local rounds, curate research skills, connect local or team wiki knowledge bases, scaffold new tool integrations, plan experiments, run tool-specific workflows, work with collaboration platforms, interpret raw evidence, write Chinese reports, and capture guardrails. It includes Modal compute workflows for custom CPU/GPU pilots, AlphaFold Server workflows, Tamarind Bio API, and PepMLM peptide-candidate generation, result auditing, and conservative shortlist handoff.",
     "developerName": "Luke Jiang",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "Help me triage and run a Protein Lab dry-lab task."
+    "defaultPrompt": "Help me set up or run a Protein Lab dry-lab workspace."
   }
 }
