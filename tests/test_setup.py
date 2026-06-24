@@ -68,6 +68,13 @@ def test_doctor_reports_bad_config_as_blocked(tmp_path: Path) -> None:
     assert report["checks"]["config"]["state"] == "blocked"
 
 
+def test_looks_like_credential_distinguishes_aa_from_token() -> None:
+    aa_sequence = "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQSAGKLPGDP"  # 42-residue protein
+    assert setup._looks_like_credential(aa_sequence) is False
+    assert setup._looks_like_credential("deadbeef" * 6) is True
+    assert setup._looks_like_credential("AbCdEf1234" * 4 + "==") is True
+
+
 def test_doctor_writes_reports_without_secret_values(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("TAMARIND_API_KEY", "super-secret-value")
     config_path = tmp_path / "config.json"

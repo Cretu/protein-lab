@@ -46,3 +46,20 @@ def test_assert_no_secret_text_rejects_high_entropy_hex() -> None:
     fake_hex = "deadbeef" * 6  # 48 hex chars looks like a hashed credential
     with pytest.raises(ValueError):
         kb.assert_no_secret_text(f"deploy key = {fake_hex}")
+
+
+def test_assert_no_secret_text_allows_long_amino_acid_sequence() -> None:
+    # 60-residue all-uppercase AA chain — looks like base64 length-wise but is
+    # legitimate biology content; the lowercase/digit gate keeps it through.
+    aa = "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQSAGKLPGDPRLEVTAEMVERVRGRMAR"
+    kb.assert_no_secret_text(f"Target sequence draft\n{aa}\n")
+
+
+def test_looks_like_high_entropy_secret_catches_mixed_case_base64() -> None:
+    token = "AbCdEfGh1234567890QrStUvWxYzABCDEFGHabcd"  # 40 chars, mixed case + digits
+    assert kb.looks_like_high_entropy_secret(token) is True
+
+
+def test_looks_like_high_entropy_secret_skips_uppercase_aa_run() -> None:
+    aa = "M" + "A" * 45  # 46 chars, uppercase only
+    assert kb.looks_like_high_entropy_secret(aa) is False
