@@ -75,6 +75,12 @@ def extracted_root(path: Path, persistent_dir: Path | None) -> Iterator[Path]:
     if not (path.is_file() and zipfile.is_zipfile(path)):
         raise FileNotFoundError(f"Input is not an AF Server zip or directory: {path}")
     if persistent_dir is not None:
+        # Guardrail: only blow away directories we own, in case a caller wires
+        # ``persistent_dir`` to an unrelated path by mistake.
+        if persistent_dir.name != "_extracted":
+            raise ValueError(
+                f"persistent_dir must be named '_extracted'; got {persistent_dir.name!r}"
+            )
         if persistent_dir.exists():
             shutil.rmtree(persistent_dir)
         persistent_dir.mkdir(parents=True, exist_ok=True)
@@ -178,9 +184,12 @@ def summarize_pair(full: dict[str, Any]) -> dict[str, Any]:
         key=lambda item: (item["pae_mean"], -item["contact_mean"]),
     )[:20]
 
+    skipped_chains = chains[2:]
     return {
         "chains": chains,
         "primary_pair": [chain_a, chain_b],
+        "analyzed_pair_only": True,
+        "skipped_chains": skipped_chains,
         "mean_inter_chain_pae": mean(inter_pae),
         "min_inter_chain_pae": min(inter_pae) if inter_pae else None,
         "max_contact_probability": max(inter_contact) if inter_contact else None,
@@ -244,6 +253,8 @@ def summarize_job(root: Path, job_dir: Path) -> dict[str, Any]:
         warnings.append("missing_job_request_json")
     if len(summary_paths) != len(full_by_index):
         warnings.append("summary_full_data_count_mismatch")
+    if any(model.get("skipped_chains") for model in models):
+        warnings.append("only_first_two_chains_analyzed")
 
     return {
         "job_dir": str(job_dir.relative_to(root)),

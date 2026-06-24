@@ -72,3 +72,9 @@ def test_sleep_backoff_caps(monkeypatch) -> None:
         ta._sleep_backoff(attempt)
     assert captured[0] == 1
     assert captured[-1] == 30  # capped
+
+
+def test_stream_download_rejects_non_http_scheme(tmp_path: Path) -> None:
+    with pytest.raises(ta.TamarindError) as info:
+        ta.stream_download(f"file://{tmp_path / 'leak'}", tmp_path / "out.bin")
+    assert "scheme" in str(info.value)

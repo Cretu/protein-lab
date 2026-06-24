@@ -1,6 +1,13 @@
-"""Pytest configuration: expose script modules under stable import names."""
+"""Pytest configuration: expose script modules under stable import names.
+
+Each script is loaded eagerly but failures are isolated per module via a lazy
+stub. If `skills/foo/scripts/foo.py` fails to import, only tests that actually
+import the `foo` module fail; the rest of the session still runs.
+"""
 from __future__ import annotations
 
+import importlib.abc
+import importlib.machinery
 import importlib.util
 import sys
 from pathlib import Path
@@ -20,13 +27,28 @@ SCRIPT_MAP = {
 }
 
 
-def _load(name: str, path: Path) -> None:
-    spec = importlib.util.spec_from_file_location(name, path)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
+class _LazyScriptLoader(importlib.abc.Loader):
+    def __init__(self, path: Path) -> None:
+        self._path = path
+
+    def create_module(self, spec):  # noqa: D401 — importlib API
+        return None
+
+    def exec_module(self, module) -> None:
+        spec = importlib.util.spec_from_file_location(module.__name__, self._path)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
 
 
-for module_name, module_path in SCRIPT_MAP.items():
-    _load(module_name, module_path)
+class _LazyScriptFinder(importlib.abc.MetaPathFinder):
+    def __init__(self, mapping: dict[str, Path]) -> None:
+        self._mapping = mapping
+
+    def find_spec(self, fullname, path=None, target=None):
+        script_path = self._mapping.get(fullname)
+        if script_path is None:
+            return None
+        return importlib.machinery.ModuleSpec(fullname, _LazyScriptLoader(script_path))
+
+
+sys.meta_path.insert(0, _LazyScriptFinder(SCRIPT_MAP))

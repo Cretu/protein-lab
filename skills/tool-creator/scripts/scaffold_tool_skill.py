@@ -78,6 +78,10 @@ def scaffold(skills_root: Path, tool_name: str, tool_kind: str, display_name: st
     if tool_kind not in VALID_KINDS:
         raise ValueError(f"tool kind must be one of: {', '.join(sorted(VALID_KINDS))}")
     normalized = normalize_tool_name(tool_name)
+    return _scaffold_normalized(skills_root, normalized, tool_kind, display_name, force)
+
+
+def _scaffold_normalized(skills_root: Path, normalized: str, tool_kind: str, display_name: str, force: bool) -> Path:
     skill_dir = skills_root / normalized
     skill_file = skill_dir / "SKILL.md"
     if skill_file.exists() and not force:
@@ -96,11 +100,13 @@ def main() -> int:
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    if args.tool_kind not in VALID_KINDS:
+        raise ValueError(f"tool kind must be one of: {', '.join(sorted(VALID_KINDS))}")
     normalized = normalize_tool_name(args.tool_name)
     if args.dry_run:
         print(render_skill(normalized, args.tool_kind, args.display_name))
         return 0
-    path = scaffold(Path(args.skills_root), args.tool_name, args.tool_kind, args.display_name, args.force)
+    path = _scaffold_normalized(Path(args.skills_root), normalized, args.tool_kind, args.display_name, args.force)
     print(path)
     return 0
 

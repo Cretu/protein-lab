@@ -33,3 +33,16 @@ def test_write_note_creates_category_note(tmp_path: Path) -> None:
     path = kb.write_note(tmp_path, "decisions", "Use Local Wiki", "Decision body.")
     assert path.relative_to(tmp_path).as_posix() == "decisions/use-local-wiki.md"
     assert "Decision body." in path.read_text()
+
+
+def test_assert_no_secret_text_allows_word_neighbours() -> None:
+    # These previously tripped the substring guard; word boundaries should let them through.
+    kb.assert_no_secret_text("Tokenizer notes for HuggingFace BPE.")  # substring 'token'
+    kb.assert_no_secret_text("Secrets management is out of scope.")    # 'secret' inside 'secrets'
+    kb.assert_no_secret_text("Cookbook chapter on auth design.")       # 'cook' near 'cookie'
+
+
+def test_assert_no_secret_text_rejects_high_entropy_hex() -> None:
+    fake_hex = "deadbeef" * 6  # 48 hex chars looks like a hashed credential
+    with pytest.raises(ValueError):
+        kb.assert_no_secret_text(f"deploy key = {fake_hex}")

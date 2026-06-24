@@ -176,19 +176,6 @@ def parse_table(file: TextFile, text: str, expected_length: int | None, order_st
     return candidates
 
 
-def walk_json(value: Any, path: str = "") -> Iterable[tuple[str, Any]]:
-    if isinstance(value, dict):
-        for key, child in value.items():
-            child_path = f"{path}.{key}" if path else str(key)
-            yield child_path, child
-            yield from walk_json(child, child_path)
-    elif isinstance(value, list):
-        for idx, child in enumerate(value):
-            child_path = f"{path}[{idx}]"
-            yield child_path, child
-            yield from walk_json(child, child_path)
-
-
 def parse_json_value(
     file: TextFile,
     value: Any,
@@ -259,7 +246,11 @@ def parse_json_file(file: TextFile, text: str, expected_length: int | None, orde
 
 def parse_text(file: TextFile, text: str, expected_length: int | None, order_start: int) -> list[Candidate]:
     candidates: list[Candidate] = []
-    pattern = r"[ACDEFGHIKLMNPQRSTVWYXBZUOJ]{%d}" % expected_length if expected_length else r"[ACDEFGHIKLMNPQRSTVWYXBZUOJ]{4,80}"
+    # Anchor with negative lookarounds so longer uppercase tokens (e.g. headers
+    # or accession-like IDs) are not silently truncated to the first N residues.
+    core = r"[ACDEFGHIKLMNPQRSTVWYXBZUOJ]"
+    length_clause = f"{{{expected_length}}}" if expected_length else "{4,80}"
+    pattern = rf"(?<![A-Z]){core}{length_clause}(?![A-Z])"
     seen_in_file: set[str] = set()
     for line_no, line in enumerate(text.splitlines(), start=1):
         if key_has_any(line, TARGET_KEY_HINTS):
@@ -332,7 +323,8 @@ def dedupe_candidates(candidates: list[Candidate], expected_length: int | None) 
         grouped.setdefault(candidate.sequence, []).append(candidate)
     rows: list[dict[str, Any]] = []
     for sequence, group in grouped.items():
-        best = min(group, key=lambda cand: (row_rank_value(cand) is None, row_rank_value(cand) or 0, cand.source_order))
+        ranked = [(row_rank_value(cand), cand) for cand in group]
+        _, best = min(ranked, key=lambda item: (item[0] is None, item[0] or 0, item[1].source_order))
         rows.append(
             {
                 "sequence": sequence,

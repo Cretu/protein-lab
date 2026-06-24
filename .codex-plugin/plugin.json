@@ -1,6 +1,6 @@
 {
   "name": "protein-lab",
-  "version": "0.3.0+codex.20260624101302",
+  "version": "0.4.1+codex.20260624111500",
   "license": "MIT",
   "description": "Portable dry-lab onboarding, project workspaces, tool creation, skill curation, knowledge-base/wiki workflows, experiment planning, external tools, collaboration, reporting, and guardrails for Protein Lab.",
   "author": {

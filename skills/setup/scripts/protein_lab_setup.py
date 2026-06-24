@@ -19,6 +19,13 @@ PROJECT_CONFIG_DIR = ".protein-lab"
 PROJECT_CONFIG_FILE = "project.json"
 REQUIRED_PYTHON = (3, 10)
 SECRET_HINTS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "COOKIE")
+# Reject strings that look like real credentials (long hex or base64 chunks)
+# even when the field name itself is innocuous. Slashes are excluded from the
+# base64 alternative so filesystem paths do not match as one giant blob.
+SECRET_VALUE_PATTERNS = (
+    re.compile(r"\b[A-Fa-f0-9]{40,}\b"),
+    re.compile(r"\b[A-Za-z0-9+]{40,}={0,2}\b"),
+)
 
 
 def slugify_project_id(value: str) -> str:
@@ -121,7 +128,7 @@ def write_project_config(config: dict[str, Any], workspace_root: Path) -> Path:
 
 
 def assert_no_secret_values(value: Any) -> None:
-    """Catch accidental storage of obvious secret-like keys in config data."""
+    """Catch accidental storage of obvious secret-like keys or credential-shaped values in config data."""
     if isinstance(value, dict):
         for key, child in value.items():
             if any(hint in str(key).upper() for hint in SECRET_HINTS):
@@ -130,6 +137,9 @@ def assert_no_secret_values(value: Any) -> None:
     elif isinstance(value, list):
         for child in value:
             assert_no_secret_values(child)
+    elif isinstance(value, str):
+        if any(pattern.search(value) for pattern in SECRET_VALUE_PATTERNS):
+            raise ValueError("Refusing to write secret-like value into config.")
 
 
 def path_status(path_value: str | None, *, should_exist: bool = True) -> dict[str, Any]:
