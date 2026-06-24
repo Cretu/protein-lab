@@ -22,10 +22,20 @@ SECRET_HINTS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "COOKIE")
 # Reject strings that look like real credentials (long hex or base64 chunks)
 # even when the field name itself is innocuous. Slashes are excluded from the
 # base64 alternative so filesystem paths do not match as one giant blob.
-SECRET_VALUE_PATTERNS = (
-    re.compile(r"\b[A-Fa-f0-9]{40,}\b"),
-    re.compile(r"\b[A-Za-z0-9+]{40,}={0,2}\b"),
-)
+# The base64 alternative additionally requires a lowercase letter or a digit
+# so long all-uppercase amino-acid sequences are not mistaken for a token.
+HEX_RUN_RE = re.compile(r"\b[A-Fa-f0-9]{40,}\b")
+BASE64_RUN_RE = re.compile(r"\b[A-Za-z0-9+]{40,}={0,2}\b")
+
+
+def _looks_like_credential(value: str) -> bool:
+    if HEX_RUN_RE.search(value):
+        return True
+    for match in BASE64_RUN_RE.finditer(value):
+        token = match.group(0)
+        if any(c.islower() or c.isdigit() for c in token):
+            return True
+    return False
 
 
 def slugify_project_id(value: str) -> str:
@@ -138,7 +148,7 @@ def assert_no_secret_values(value: Any) -> None:
         for child in value:
             assert_no_secret_values(child)
     elif isinstance(value, str):
-        if any(pattern.search(value) for pattern in SECRET_VALUE_PATTERNS):
+        if _looks_like_credential(value):
             raise ValueError("Refusing to write secret-like value into config.")
 
 

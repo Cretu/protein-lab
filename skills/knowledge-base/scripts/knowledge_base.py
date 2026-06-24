@@ -20,10 +20,8 @@ SECRET_PATTERNS = (
     r"\bsecret\b",
     r"\bcookie\b",
 )
-HIGH_ENTROPY_PATTERNS = (
-    r"\b[A-Fa-f0-9]{40,}\b",
-    r"\b[A-Za-z0-9+]{40,}={0,2}\b",
-)
+HEX_RUN_RE = re.compile(r"\b[A-Fa-f0-9]{40,}\b")
+BASE64_RUN_RE = re.compile(r"\b[A-Za-z0-9+]{40,}={0,2}\b")
 
 
 def slugify(title: str) -> str:
@@ -31,11 +29,25 @@ def slugify(title: str) -> str:
     return re.sub(r"-+", "-", slug).strip("-") or "note"
 
 
+def looks_like_high_entropy_secret(text: str) -> bool:
+    """Heuristic: hex runs >=40 chars, or base64-shaped runs that contain at
+    least one lowercase letter or digit. The lowercase/digit gate prevents
+    long all-uppercase amino-acid sequences from being mistaken for a token.
+    """
+    if HEX_RUN_RE.search(text):
+        return True
+    for match in BASE64_RUN_RE.finditer(text):
+        token = match.group(0)
+        if any(c.islower() or c.isdigit() for c in token):
+            return True
+    return False
+
+
 def assert_no_secret_text(text: str) -> None:
     lowered = text.lower()
     if any(re.search(pattern, lowered) for pattern in SECRET_PATTERNS):
         raise ValueError("Refusing to write text containing secret-like words.")
-    if any(re.search(pattern, text) for pattern in HIGH_ENTROPY_PATTERNS):
+    if looks_like_high_entropy_secret(text):
         raise ValueError("Refusing to write text containing a high-entropy token-like string.")
 
 
