@@ -10,6 +10,21 @@ Protein Lab helps Codex onboard new devices and teams, diagnose local environmen
 - Network access for AlphaFold Server, Tamarind Bio API, Modal, and Feishu/Lark workflows that talk to those services.
 - A platform-appropriate browser for AlphaFold Server submission flows. See `skills/tool-af-server/references/upload_recovery_os_notes.md` for OS-specific UI automation notes (macOS / Windows / Linux).
 
+## Install With Codex
+
+This repository includes a repo marketplace at `.agents/plugins/marketplace.json`.
+Register it as a Codex marketplace source, then install the plugin from that
+marketplace:
+
+```bash
+codex plugin marketplace add Cretu/protein-lab --ref main
+codex plugin add protein-lab@protein-lab
+```
+
+You can also open `/plugins` in Codex, switch to the `Protein Lab` marketplace,
+and install `protein-lab` from there. Start a new thread after installation so
+Codex loads the bundled skills.
+
 ## Environment Variables
 
 | Variable | Purpose | Default |
